@@ -5,7 +5,8 @@ name: ps5-tv-sleep
 
 services:
   ps5-tv-sleep:
-    build: .
+    image: dronrb/ps5-tv-sleep:latest
+    build: . # for "up --build", to run your own changes
     restart: unless-stopped
     # adb leaves a background server running; init reaps it and its children.
     init: true
