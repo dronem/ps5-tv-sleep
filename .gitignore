@@ -1,0 +1,6 @@
+.env
+/bin/
+/ps5-tv-sleep
+/ps5-tv-sleep.exe
+/coverage.out
+/.task/

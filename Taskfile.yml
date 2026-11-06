@@ -1,0 +1,67 @@
+version: "3"
+
+tasks:
+  default:
+    desc: List the available tasks
+    silent: true
+    cmds:
+      - task --list
+
+  check:
+    desc: Run everything CI runs, except the race detector
+    cmds:
+      - task: lint
+      - task: test
+
+  fmt:
+    desc: Format the code
+    cmds:
+      - golangci-lint fmt
+
+  lint:
+    desc: Run the linters
+    cmds:
+      - golangci-lint run
+
+  test:
+    desc: Run the tests in random order
+    cmds:
+      - go test -count=1 -shuffle=on ./...
+
+  test:race:
+    desc: Run the tests with the race detector (needs a C compiler)
+    env:
+      CGO_ENABLED: "1"
+    cmds:
+      - go test -count=1 -shuffle=on -race ./...
+
+  test:race:docker:
+    desc: Run the tests with the race detector in Docker, for machines without a C compiler
+    cmds:
+      - docker run --rm -v "{{.ROOT_DIR}}:/src" -w /src golang:1.26 go test -count=1 -shuffle=on -race ./...
+
+  cover:
+    desc: Show test coverage per function
+    cmds:
+      - go test -count=1 -coverprofile=coverage.out ./...
+      - go tool cover -func=coverage.out
+
+  build:
+    desc: Build the service into bin/
+    cmds:
+      - go build -o bin/ ./cmd/ps5-tv-sleep
+
+  docker:build:
+    desc: Build the Docker image without touching the running service
+    cmds:
+      - docker build -t ps5-tv-sleep:dev .
+
+  up:
+    desc: Build and start the service with the settings from .env
+    cmds:
+      - docker compose up -d --build
+
+  logs:
+    desc: Follow the service log
+    cmds:
+      - docker compose logs -f

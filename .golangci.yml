@@ -1,0 +1,64 @@
+version: "2"
+
+linters:
+  default: standard
+  enable:
+    - bodyclose
+    - errorlint
+    - exhaustive
+    - gocritic
+    - gosec
+    - misspell
+    - nilerr
+    - noctx
+    - revive
+    - sloglint
+    - unconvert
+    - unparam
+    - usetesting
+    - whitespace
+  settings:
+    exhaustive:
+      default-signifies-exhaustive: true
+    revive:
+      rules:
+        - name: context-as-argument
+          arguments:
+            - allow-types-before: "*testing.T"
+        - name: error-return
+        - name: error-strings
+        - name: errorf
+        - name: exported
+        - name: if-return
+        - name: indent-error-flow
+        - name: package-comments
+        - name: range
+        - name: receiver-naming
+        - name: unexported-return
+        - name: var-naming
+          arguments:
+            - []
+            - []
+            - - skip-package-name-checks: true
+    sloglint:
+      kv-only: true
+      no-global: ""
+  exclusions:
+    presets:
+      - std-error-handling
+    rules:
+      # A failed write in a test server shows up as a failure in the test itself.
+      - path: _test\.go
+        linters:
+          - errcheck
+          - gosec
+          - noctx
+
+formatters:
+  enable:
+    - gofumpt
+    - goimports
+  settings:
+    goimports:
+      local-prefixes:
+        - github.com/dronem/ps5-tv-sleep

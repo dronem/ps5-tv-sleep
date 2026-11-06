@@ -1,0 +1,30 @@
+# The project name is part of the adb-keys volume's name, so changing it means
+# approving the debugging prompt on the TV again. Run "docker compose down" first,
+# or the old container keeps running alongside the new one.
+name: ps5-tv-sleep
+
+services:
+  ps5-tv-sleep:
+    build: .
+    restart: unless-stopped
+    # adb leaves a background server running; init reaps it and its children.
+    init: true
+    env_file: .env
+    # The service only needs outgoing network access and the two paths below.
+    read_only: true
+    cap_drop:
+      - ALL
+    security_opt:
+      - no-new-privileges:true
+    tmpfs:
+      - /tmp # adb keeps its server log here
+    volumes:
+      - adb-keys:/data/.android
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+volumes:
+  adb-keys:
