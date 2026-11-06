@@ -1,9 +1,13 @@
-FROM golang:1.26-alpine AS build
+# The compiler runs on the build machine and cross-compiles, because compiling
+# under emulation for another architecture is very slow.
+FROM --platform=$BUILDPLATFORM golang:1.26-alpine AS build
+ARG TARGETOS TARGETARCH
 WORKDIR /src
 COPY go.mod ./
 COPY cmd ./cmd
 COPY internal ./internal
-RUN CGO_ENABLED=0 go build -trimpath -ldflags="-s -w" -o /ps5-tv-sleep ./cmd/ps5-tv-sleep
+RUN CGO_ENABLED=0 GOOS=$TARGETOS GOARCH=$TARGETARCH \
+    go build -trimpath -ldflags="-s -w" -o /ps5-tv-sleep ./cmd/ps5-tv-sleep
 
 FROM alpine:3.22
 RUN apk add --no-cache android-tools \

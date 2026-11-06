@@ -1,6 +1,7 @@
 # ps5-tv-sleep: Turn Off Your Android TV When Your PS5 Shuts Down
 
 [![CI](https://github.com/dronem/ps5-tv-sleep/actions/workflows/ci.yml/badge.svg)](https://github.com/dronem/ps5-tv-sleep/actions/workflows/ci.yml)
+[![Docker Hub](https://img.shields.io/docker/v/dronrb/ps5-tv-sleep?sort=semver&label=docker%20hub)](https://hub.docker.com/r/dronrb/ps5-tv-sleep)
 [![License: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 
 A small self-hosted Docker service that automatically puts your Android TV or Google TV to sleep
@@ -82,16 +83,30 @@ rest mode and the service cannot see the transition.
 
 ## Running
 
+The image is published on [Docker Hub](https://hub.docker.com/r/dronrb/ps5-tv-sleep) for `amd64` and
+`arm64`, so you need only two files:
+
 ```sh
-git clone https://github.com/dronem/ps5-tv-sleep.git
-cd ps5-tv-sleep
-cp .env.example .env   # set PS5_HOST and TV_HOST
-docker compose up -d --build
+mkdir ps5-tv-sleep && cd ps5-tv-sleep
+curl -fsSO https://raw.githubusercontent.com/dronem/ps5-tv-sleep/main/compose.yaml
+curl -fsS -o .env https://raw.githubusercontent.com/dronem/ps5-tv-sleep/main/.env.example
+# Now set PS5_HOST and TV_HOST in .env
+docker compose up -d
 docker compose logs -f
 ```
 
 On the first run the TV must be on, because it has to approve the service. See
 [Giving the service ADB access](#giving-the-service-adb-access).
+
+To update to the latest version:
+
+```sh
+docker compose pull
+docker compose up -d
+```
+
+To build the image from source instead, clone the repository, create `.env` the same way and run
+`docker compose up -d --build`.
 
 ## Giving the service ADB access
 
@@ -114,7 +129,7 @@ support it. On a TV that offers only that, the service cannot connect.
 ### 2. Approve the service
 
 1. Turn the TV on. A sleeping TV does not answer, so it cannot show the prompt.
-2. Start the service with `docker compose up -d --build`.
+2. Start the service with `docker compose up -d`.
 3. When a debugging prompt appears on the TV, select **Always allow from this computer** and
    confirm. Without this option, the TV asks again after each reconnect.
 
@@ -275,7 +290,7 @@ To try a change without real devices, run the image with `DRY_RUN=true` and with
 A second instance with the same bot token would conflict with the running service.
 
 ```text
-cmd/ps5-tv-sleep/ entry point: reads the config, handles signals, starts the app
+cmd/ps5-tv-sleep/  entry point: reads the config, handles signals, starts the app
 internal/config/   settings from environment variables
 internal/app/      the service itself: polling loops, reactions to events, bot commands
 internal/ps5/      polling the PS5 over DDP and detecting power transitions
@@ -289,6 +304,16 @@ internal/telegram/ sending notifications and receiving commands through Telegram
 
 The name of the Compose project is part of the name of the `adb-keys` volume. If you change it,
 the TV will ask to approve debugging again.
+
+### Releasing
+
+Pushing a version tag runs the tests, then publishes the image to Docker Hub as `1.2.3`, `1.2` and
+`latest`. The repository needs the `DOCKERHUB_USERNAME` and `DOCKERHUB_TOKEN` secrets.
+
+```sh
+git tag v1.2.3
+git push origin v1.2.3
+```
 
 ## License
 
