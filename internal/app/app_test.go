@@ -23,7 +23,7 @@ const (
 	testActivity = "com.netflix.ninja/.MainActivity"
 )
 
-// fakeTV is an adb runner for a TV that is on until it receives the sleep key.
+// fakeTV is an adb runner for a TV that is on until it receives the off key.
 type fakeTV struct {
 	asleep atomic.Bool
 	reads  atomic.Int32 // power state reads answered
@@ -45,7 +45,7 @@ func (f *fakeTV) run(_ context.Context, args ...string) (string, error) {
 		return "mWakefulness=Awake", nil
 	case strings.HasSuffix(cmd, "dumpsys window"):
 		return "  mCurrentFocus=Window{1a u0 " + testActivity + "}\n", nil
-	case strings.HasSuffix(cmd, "KEYCODE_SLEEP"):
+	case strings.HasSuffix(cmd, "KEYCODE_POWER"):
 		f.asleep.Store(true)
 	}
 	return "", nil
@@ -184,7 +184,7 @@ func TestRunPowersOffTVWhenPS5Rests(t *testing.T) {
 	waitFor(t, "the service to poll the tv", func() bool { return screen.reads.Load() >= 2 })
 	console.reply.Store(replyStandby)
 
-	waitFor(t, "the sleep key", screen.sleepSent)
+	waitFor(t, "the off key", screen.sleepSent)
 	waitFor(t, "both messages", func() bool {
 		got := chat.messages()
 		return slices.Contains(got, restMessage) && slices.Contains(got, tvOffMessage)
@@ -219,7 +219,7 @@ func TestRunWithoutTelegramStillPowersOffTV(t *testing.T) {
 	awaitProbes(t, console, 2)
 	console.reply.Store(replyStandby)
 
-	waitFor(t, "the sleep key", screen.sleepSent)
+	waitFor(t, "the off key", screen.sleepSent)
 	stop()
 }
 
@@ -233,14 +233,14 @@ func TestRunRespectsNotificationSettings(t *testing.T) {
 	awaitProbes(t, console, 2)
 	console.reply.Store(replyStandby)
 
-	waitFor(t, "the sleep key", screen.sleepSent)
+	waitFor(t, "the off key", screen.sleepSent)
 	stop()
 
 	if got := chat.messages(); len(got) != 0 {
 		t.Errorf("sent %q, want silence", got)
 	}
 	if got := screen.reads.Load(); got != 1 {
-		t.Errorf("tv power read %d times, want only the one before the sleep key: nobody asked to watch the tv", got)
+		t.Errorf("tv power read %d times, want only the one before the off key: nobody asked to watch the tv", got)
 	}
 }
 
@@ -301,7 +301,7 @@ func TestHandlePS5Event(t *testing.T) {
 				t.Errorf("notified %v, want %v", sent, tt.wantText)
 			}
 			if got := screen.sleepSent(); got != tt.wantSleep {
-				t.Errorf("sleep key sent = %v, want %v", got, tt.wantSleep)
+				t.Errorf("off key sent = %v, want %v", got, tt.wantSleep)
 			}
 		})
 	}

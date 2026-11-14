@@ -69,6 +69,7 @@ func New(cfg config.Config, adb tv.Runner) *App {
 		tv: tv.NewClient(tv.ClientConfig{
 			Serial:       tvAddr,
 			RequireFocus: cfg.RequireFocus,
+			OffKey:       cfg.TVOffKey,
 			DryRun:       cfg.DryRun,
 		}, adb),
 		tvPollInterval: tvPollInterval,
@@ -90,7 +91,7 @@ func (a *App) Run(ctx context.Context) error {
 	}
 
 	slog.Info("started", "ps5", a.prober.Addr, "tv", a.tvAddr,
-		"poll", a.cfg.PollInterval, "standby_confirm", a.cfg.StandbyConfirm, "dry_run", a.cfg.DryRun,
+		"poll", a.cfg.PollInterval, "standby_confirm", a.cfg.StandbyConfirm, "tv_off_key", a.cfg.TVOffKey, "dry_run", a.cfg.DryRun,
 		"telegram", a.chat != nil, "notify_ps5", a.cfg.NotifyPS5, "notify_tv", a.cfg.NotifyTV, "tv_button", a.cfg.TVButton)
 
 	if a.chat != nil {

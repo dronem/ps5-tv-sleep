@@ -18,7 +18,7 @@ func TestLoadDefaults(t *testing.T) {
 	if cfg.PS5Host != "a" || cfg.TVHost != "b" {
 		t.Errorf("hosts = %q, %q", cfg.PS5Host, cfg.TVHost)
 	}
-	if cfg.TVPort != "5555" || cfg.PollInterval != 5*time.Second || cfg.StandbyConfirm != 2 {
+	if cfg.TVPort != "5555" || cfg.PollInterval != 5*time.Second || cfg.StandbyConfirm != 2 || cfg.TVOffKey != "KEYCODE_POWER" {
 		t.Errorf("unexpected defaults: %+v", cfg)
 	}
 	if cfg.DryRun || cfg.RequireFocus != nil || cfg.TelegramToken != "" {
@@ -37,6 +37,7 @@ func TestLoadOverrides(t *testing.T) {
 		"POLL_INTERVAL":       "1m",
 		"STANDBY_CONFIRM":     "3",
 		"TV_REQUIRE_FOCUS":    "hdmi",
+		"TV_OFF_KEY":          "KEYCODE_SLEEP",
 		"DRY_RUN":             "true",
 		"TELEGRAM_BOT_TOKEN":  "token",
 		"TELEGRAM_CHAT_ID":    "-100500",
@@ -47,7 +48,7 @@ func TestLoadOverrides(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if cfg.TVPort != "5556" || cfg.PollInterval != time.Minute || cfg.StandbyConfirm != 3 || !cfg.DryRun {
+	if cfg.TVPort != "5556" || cfg.PollInterval != time.Minute || cfg.StandbyConfirm != 3 || !cfg.DryRun || cfg.TVOffKey != "KEYCODE_SLEEP" {
 		t.Errorf("unexpected values: %+v", cfg)
 	}
 	if cfg.RequireFocus == nil || !cfg.RequireFocus.MatchString("hdmi") {
@@ -75,6 +76,8 @@ func TestLoadRejectsInvalidValues(t *testing.T) {
 		{"interval is negative", "POLL_INTERVAL", "-1s", "POLL_INTERVAL"},
 		{"confirm is zero", "STANDBY_CONFIRM", "0", "STANDBY_CONFIRM"},
 		{"focus is not a regexp", "TV_REQUIRE_FOCUS", "(", "TV_REQUIRE_FOCUS"},
+		{"key is lowercase", "TV_OFF_KEY", "power", "TV_OFF_KEY"},
+		{"key carries a command", "TV_OFF_KEY", "KEYCODE_POWER; reboot", "TV_OFF_KEY"},
 		{"dry run is not a bool", "DRY_RUN", "maybe", "DRY_RUN"},
 		{"notify ps5 is not a bool", "TELEGRAM_NOTIFY_PS5", "maybe", "TELEGRAM_NOTIFY_PS5"},
 		{"notify tv is not a bool", "TELEGRAM_NOTIFY_TV", "maybe", "TELEGRAM_NOTIFY_TV"},

@@ -40,7 +40,7 @@ const (
 	cmdConnect = "connect " + testSerial
 	cmdPower   = "shell dumpsys power"
 	cmdWindow  = "shell dumpsys window"
-	cmdSleep   = "shell input keyevent KEYCODE_SLEEP"
+	cmdSleep   = "shell input keyevent KEYCODE_POWER"
 )
 
 func text(s string) func() (string, error) {
@@ -104,6 +104,22 @@ func TestPowerOff(t *testing.T) {
 	}
 }
 
+func TestPowerOffSendsConfiguredKey(t *testing.T) {
+	f := newFake("Awake", hdmiWindow)
+	tv := NewClient(ClientConfig{Serial: testSerial, OffKey: "KEYCODE_SLEEP"}, f.run)
+
+	got, err := tv.PowerOff(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got != OutcomeSleepSent {
+		t.Errorf("outcome = %q, want %q", got, OutcomeSleepSent)
+	}
+	if !slices.Contains(f.calls, "shell input keyevent KEYCODE_SLEEP") || f.sentSleep() {
+		t.Errorf("want only KEYCODE_SLEEP sent; calls: %v", f.calls)
+	}
+}
+
 func TestPowerOffFailedConnectExitsZero(t *testing.T) {
 	f := newFake("Awake", hdmiWindow)
 	f.replies[cmdConnect] = text("failed to connect to " + testSerial + "\n")
@@ -136,7 +152,7 @@ func TestPowerOffDoesNotRetrySilentTV(t *testing.T) {
 			return "connected to " + testSerial, nil
 		case args[len(args)-1] == "dumpsys" || args[len(args)-1] == "power":
 			return "mWakefulness=Awake", nil
-		case args[len(args)-1] == "KEYCODE_SLEEP":
+		case args[len(args)-1] == "KEYCODE_POWER":
 			sleepSent = true
 		}
 		return "", nil
@@ -382,12 +398,12 @@ func TestStateAfterSleepKeyCountsAsOff(t *testing.T) {
 	}
 
 	if got, _ := c.State(context.Background()); got != Off {
-		t.Errorf("right after the sleep key: state = %v, want off", got)
+		t.Errorf("right after the off key: state = %v, want off", got)
 	}
 
 	c.sleepSentAt = time.Now().Add(-2 * sleepSettle)
 	if got, _ := c.State(context.Background()); got != Unreachable {
-		t.Errorf("long after the sleep key: state = %v, want unreachable", got)
+		t.Errorf("long after the off key: state = %v, want unreachable", got)
 	}
 }
 

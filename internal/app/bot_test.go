@@ -48,7 +48,7 @@ func TestCommands(t *testing.T) {
 				t.Errorf("replies = %q, want one containing %q", replies, tt.wantReply)
 			}
 			if got := screen.sleepSent(); got != tt.wantSleep {
-				t.Errorf("sleep key sent = %v, want %v", got, tt.wantSleep)
+				t.Errorf("off key sent = %v, want %v", got, tt.wantSleep)
 			}
 		})
 	}

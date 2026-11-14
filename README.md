@@ -38,7 +38,9 @@ but they have not been tested. The same goes for the PS5 Pro. The PS4 is not sup
 
 Every 5 seconds the service polls the console over DDP (UDP, port 9302). When the PS5 goes
 from "on" to "rest mode" or falls silent, the service checks that the TV is on and sends
-`KEYCODE_SLEEP` over ADB.
+`KEYCODE_POWER` over ADB, the same key as the power button on the remote. You can change the key
+with `TV_OFF_KEY`. The sleep key (`KEYCODE_SLEEP`) is not the default: after it, a Xiaomi TV did
+not wake up when the PS5 was turned on.
 
 A console that falls silent may have been switched off or may have lost the network, so how long
 the service waits before acting depends on the last reply from the PS5:
@@ -181,6 +183,7 @@ service.
 | `POLL_INTERVAL` | `5s` | How often the PS5 is polled |
 | `STANDBY_CONFIRM` | `2` | How many rest mode replies in a row trigger the action |
 | `TV_REQUIRE_FOCUS` | empty | Regular expression for the TV's foreground app |
+| `TV_OFF_KEY` | `KEYCODE_POWER` | Key that turns off the TV: an Android key name or number |
 | `DRY_RUN` | `false` | Check everything, but do not turn off the TV |
 | `TELEGRAM_BOT_TOKEN` | empty | Bot token for notifications |
 | `TELEGRAM_CHAT_ID` | empty | Numeric ID of the chat that receives notifications |

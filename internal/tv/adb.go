@@ -16,7 +16,7 @@ import (
 
 const (
 	adbCommandTimeout = 15 * time.Second
-	// sleepSettle is how long after a sleep key a TV that stops answering counts
+	// sleepSettle is how long after an off key a TV that stops answering counts
 	// as off rather than unreachable: it closes its adb session as it goes to sleep.
 	sleepSettle = time.Minute
 )
@@ -42,10 +42,10 @@ type Outcome string
 
 // The ways a power-off request can end.
 const (
-	OutcomeSleepSent     Outcome = "sleep key sent"
+	OutcomeSleepSent     Outcome = "off key sent"
 	OutcomeAlreadyOff    Outcome = "tv already off"
 	OutcomeFocusMismatch Outcome = "skipped: foreground app does not match TV_REQUIRE_FOCUS"
-	OutcomeDryRun        Outcome = "dry run: sleep key not sent"
+	OutcomeDryRun        Outcome = "dry run: off key not sent"
 	OutcomeNoAnswer      Outcome = "tv does not answer, probably already off"
 )
 
@@ -58,9 +58,17 @@ type ClientConfig struct {
 	Serial string
 	// RequireFocus, if set, limits PowerOff to foreground apps that match it.
 	RequireFocus *regexp.Regexp
-	// DryRun checks everything but does not send the sleep key.
+	// OffKey is the key that turns the TV off, such as KEYCODE_POWER. Empty
+	// means DefaultOffKey.
+	OffKey string
+	// DryRun checks everything but does not send the off key.
 	DryRun bool
 }
+
+// DefaultOffKey is the power button on the remote. KEYCODE_SLEEP looks more
+// fitting, but after it a Xiaomi TV did not wake up when the PS5 turned on over
+// HDMI-CEC. The power key toggles, so it is sent only to a TV just seen on.
+const DefaultOffKey = "KEYCODE_POWER"
 
 // Client controls an Android TV through the adb command line tool. It is safe for
 // concurrent use.
@@ -68,6 +76,7 @@ type Client struct {
 	serial       string
 	run          Runner
 	requireFocus *regexp.Regexp
+	offKey       string
 	dryRun       bool
 
 	// mu keeps one operation's reconnect from breaking another's session.
@@ -85,10 +94,15 @@ type Client struct {
 
 // NewClient returns a Client that runs adb commands through run.
 func NewClient(cfg ClientConfig, run Runner) *Client {
+	offKey := cfg.OffKey
+	if offKey == "" {
+		offKey = DefaultOffKey
+	}
 	return &Client{
 		serial:           cfg.Serial,
 		run:              run,
 		requireFocus:     cfg.RequireFocus,
+		offKey:           offKey,
 		dryRun:           cfg.DryRun,
 		powerOffAttempts: 5,
 		powerOffDelay:    3 * time.Second,
@@ -177,7 +191,7 @@ func (c *Client) powerOff(ctx context.Context, checkFocus bool) (Outcome, error)
 			return "", ctx.Err()
 		}
 		// Do not keep trying: a TV that wakes up during the retries is most
-		// likely being turned on, and the sleep key would switch it right off.
+		// likely being turned on, and the off key would switch it right off.
 		if errors.Is(err, errNoAnswer) {
 			slog.Info("tv power off skipped", "err", err)
 			return OutcomeNoAnswer, nil
@@ -194,7 +208,7 @@ func (c *Client) powerOff(ctx context.Context, checkFocus bool) (Outcome, error)
 }
 
 // State reads whether the TV is on. It only reads, so it does not wake the TV. A
-// failure means Unreachable, or Off just after a sleep key; the error says why.
+// failure means Unreachable, or Off just after an off key; the error says why.
 func (c *Client) State(ctx context.Context) (State, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
@@ -304,7 +318,7 @@ func (c *Client) powerOffOnce(ctx context.Context, checkFocus bool) (Outcome, er
 	if c.dryRun {
 		return OutcomeDryRun, nil
 	}
-	if _, err := c.adb(ctx, "-s", c.serial, "shell", "input", "keyevent", "KEYCODE_SLEEP"); err != nil {
+	if _, err := c.adb(ctx, "-s", c.serial, "shell", "input", "keyevent", c.offKey); err != nil {
 		return "", err
 	}
 	c.sleepSentAt = time.Now()

@@ -17,6 +17,7 @@ type Config struct {
 	PollInterval   time.Duration
 	StandbyConfirm int
 	RequireFocus   *regexp.Regexp // nil means any foreground app
+	TVOffKey       string
 	DryRun         bool
 
 	TelegramToken  string // empty means Telegram is off
@@ -37,6 +38,7 @@ func Load(getenv func(string) string) (Config, error) {
 		PollInterval:   read(&env, "POLL_INTERVAL", 5*time.Second, parseInterval),
 		StandbyConfirm: read(&env, "STANDBY_CONFIRM", 2, parseCount),
 		RequireFocus:   read(&env, "TV_REQUIRE_FOCUS", nil, regexp.Compile),
+		TVOffKey:       read(&env, "TV_OFF_KEY", "KEYCODE_POWER", parseKey),
 		DryRun:         read(&env, "DRY_RUN", false, parseBool),
 		TelegramToken:  getenv("TELEGRAM_BOT_TOKEN"),
 		TelegramChatID: read(&env, "TELEGRAM_CHAT_ID", "", parseChatID),
@@ -108,6 +110,17 @@ func parseCount(v string) (int, error) {
 func parsePort(v string) (string, error) {
 	if _, err := strconv.ParseUint(v, 10, 16); err != nil || v == "0" {
 		return "", fmt.Errorf("must be a port number, got %q", v)
+	}
+	return v, nil
+}
+
+var keyRe = regexp.MustCompile(`^(KEYCODE_[A-Z0-9_]+|[0-9]+)$`)
+
+// parseKey accepts an Android key name or number. The value reaches a shell on
+// the TV, so nothing else gets through.
+func parseKey(v string) (string, error) {
+	if !keyRe.MatchString(v) {
+		return "", fmt.Errorf("must be a key name such as KEYCODE_POWER or a key number, got %q", v)
 	}
 	return v, nil
 }
