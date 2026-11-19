@@ -1,0 +1,17 @@
+# Test bench for TV power experiments. It has its own adb key, so the TV asks to
+# approve it once, and it does not touch the service's container or key.
+name: ps5-tv-lab
+
+services:
+  lab:
+    build: .
+    init: true
+    env_file: ../.env
+    command: ["sleep", "infinity"]
+    volumes:
+      - adb-keys:/root/.android
+      - .:/lab:ro
+      - ./out:/out
+
+volumes:
+  adb-keys:

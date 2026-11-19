@@ -65,3 +65,25 @@ tasks:
     desc: Follow the service log
     cmds:
       - docker compose logs -f
+
+  lab:up:
+    desc: Start the TV test bench (see lab/README.md)
+    cmds:
+      - docker compose -f lab/compose.yaml up -d --build
+
+  lab:down:
+    desc: Stop the TV test bench
+    cmds:
+      - docker compose -f lab/compose.yaml down
+
+  lab:shell:
+    desc: Open a shell in the TV test bench, where the commands run as "tv <command>"
+    interactive: true
+    cmds:
+      - docker compose -f lab/compose.yaml exec lab sh
+
+  tv:
+    desc: 'Run a test bench command, e.g. "task tv -- trial key KEYCODE_POWER"'
+    interactive: true
+    cmds:
+      - docker compose -f lab/compose.yaml exec lab sh /lab/tv.sh {{.CLI_ARGS}}
